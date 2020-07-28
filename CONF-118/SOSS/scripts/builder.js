@@ -65,7 +65,8 @@ var createScene = function () {
                 hinge.meshes[meshes].actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, function (ev) {
                 }, false));
                 //Preloading AO Images
-                aoImages << new BABYLON.Texture(`./assets/materials/aoOpen/${hinge.meshes[meshes].name}_Mixed_AO.png`, scene);
+                aoImages << new BABYLON.Texture(`./assets/materials/aoOpen/${hinge.meshes[meshes].name}_AO.png`, scene);
+                aoImages << new BABYLON.Texture(`./assets/materials/aoOpen/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
                 //Roughness and Metalness adjustments
                 if (!hinge.meshes[meshes].name.includes("Wood")) {
                     hinge.meshes[meshes].material.roughness = 0.5;
@@ -83,27 +84,22 @@ var createScene = function () {
             animationGroup = hinge.animationGroups[0];
             animationGroup.loopAnimation = false;
             isOpen = true;
-            var lastAnim = 1;
 
             animationGroup.onAnimationGroupPlayObservable.add(function () {
-                lastAnim = 0;
+                setTimeout(() => {
+                    // Change AO after 4s if the hinge is open. Otherwise 0s
+                    for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
+                        if (!hinge.meshes[meshes].name.includes("Background")) {
+                            hinge.meshes[meshes].material.ambientTexture =
+                                new BABYLON.Texture(`./assets/materials/ao${isOpen ? "Open" : "Closed"}/${isWoodBlock ? "WB_" : ""}${hinge.meshes[meshes].name}_AO.png`, scene);
+                            hinge.meshes[meshes].material.ambientTexture.vAng = -Math.PI;
+                            hinge.meshes[meshes].material.ambientTexture.wAng = -Math.PI;
+                        }
+                    }
+                }, isOpen ? 4000 : 0);
             });
 
-            animationGroup.onAnimationEndObservable.add(function () {
-                if (isWoodBlock) {
-                    while (lastAnim < 1) {
-                        for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
-                            if (!hinge.meshes[meshes].name.includes("Background")) {                                
-                                hinge.meshes[meshes].material.ambientTexture =
-                                    new BABYLON.Texture(`./assets/materials/aoOpen/${hinge.meshes[meshes].name}_Mixed_AO.png`, scene);
-                                hinge.meshes[meshes].material.ambientTexture.vAng = -Math.PI;
-                                hinge.meshes[meshes].material.ambientTexture.wAng = -Math.PI;
-                                
-                            }
-                        }
-                        lastAnim++;
-                    }
-                }
+            animationGroup.onAnimationEndObservable.add(function () {                
                 $("#playAnimation").css("background", " #CD3327");
             });            
             //Environemnt
@@ -159,39 +155,63 @@ function playAnimation() {
             animationGroup.start(false, 1, 0, 4);
         }
         isOpen = !isOpen;
-    }
-
-    
+    }    
 }
 
 
 
 function woodBlockState() {
+    isWoodBlock = !isWoodBlock;
     for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
         if (!hinge.meshes[meshes].name.includes("Background")) {
             //Toggle the wood block visibility
             if (hinge.meshes[meshes].name.includes("Wood"))
-                hinge.meshes[meshes].visibility = !hinge.meshes[meshes].visibility;
+                hinge.meshes[meshes].visibility = !hinge.meshes[meshes].visibility;  
 
-            // remove Ambient Occlusion when there is not a wood block
-            hinge.meshes[meshes].material.ambientTexture = null;
+            //Setting corresponging AO.
+            hinge.meshes[meshes].material.ambientTexture =
+                new BABYLON.Texture(`./assets/materials/ao${isOpen ? "Open" : "Closed"}/${isWoodBlock ? "WB_" : ""}${hinge.meshes[meshes].name}_AO.png`, scene);
+            hinge.meshes[meshes].material.ambientTexture.vAng = -Math.PI;
+            hinge.meshes[meshes].material.ambientTexture.wAng = -Math.PI;
         }
 
-        $("#woodState").text(`${isWoodBlock ? "Show" : "Hide"} Wood Blocks`);
 
+        $("#woodState").text(`${isWoodBlock ? "Show" : "Hide"} Wood Blocks`);
         $("#woodImage").attr("src", `./assets/layout/${isWoodBlock ? "show" : "hide"}.png`);
 
-        
     }
-    isWoodBlock = !isWoodBlock;    
+        
     if (isWoodBlock && isOpen) {
         scene.activeCamera.spinTo("alpha", (Math.PI * 1.1), 60);
         scene.activeCamera.spinTo("beta", (7.5 * Math.PI / 16), 60);
         scene.activeCamera.spinTo("radius", 4, 60);
     }
+
+    
+            
 }
 
 function materialChange(material) {
+    var colorCode;
+    //Change title & code
+    switch (material) {
+        case "chrome":
+            colorCode = "#C7C7C7";
+            document.title = "SOSS - 518US26D";
+            break;
+        case "brass":
+            colorCode = "#D2BB74";
+            document.title = "SOSS - 518US4";
+            break;
+        case "black":
+            colorCode = "#181818";
+            document.title = "SOSS - 518US19";
+            break;
+        case "nickel":
+            colorCode = "#D3CBBE";
+            document.title = "SOSS - 518US15";
+            break;
+    }
 
     if (material != hingeMaterial) {
         $(`#${material}`).detach().prependTo("#materialChange");
@@ -199,31 +219,12 @@ function materialChange(material) {
         
         for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
             if (!hinge.meshes[meshes].name.includes("Wood") && !(hinge.meshes[meshes].name.includes("Background"))) {
-                hinge.meshes[meshes].material.albedoTexture =
-                    new BABYLON.Texture(`./assets/materials/baseColors/${material}.png`, scene);
-                hinge.meshes[meshes].material.albedoColor = new BABYLON.Color3(1, 1, 1);
+                hinge.meshes[meshes].material.albedoColor = new BABYLON.Color3.FromHexString(colorCode);
             }
         }
         hingeMaterial = material;
     }
 
-    //Change title
-    switch (material) {
-        case "chrome":
-            document.title = "SOSS - 518US26D";
-            break;
-        case "brass":
-            document.title = "SOSS - 518US4";
-            break;
-        case "black":
-            document.title = "SOSS - 518US19";
-            break;
-        case "nickel":
-            document.title = "SOSS - 518US15";
-            break;
-    }
-
-
-
+   
 }
 
