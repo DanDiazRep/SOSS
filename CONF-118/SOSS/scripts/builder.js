@@ -67,6 +67,8 @@ var createScene = function () {
                 //Preloading AO Images
                 aoImages << new BABYLON.Texture(`./assets/materials/aoOpen/${hinge.meshes[meshes].name}_AO.png`, scene);
                 aoImages << new BABYLON.Texture(`./assets/materials/aoOpen/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
+                aoImages << new BABYLON.Texture(`./assets/materials/aoClosed/${hinge.meshes[meshes].name}_AO.png`, scene);
+                aoImages << new BABYLON.Texture(`./assets/materials/aoClosed/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
                 //Roughness and Metalness adjustments
                 if (!hinge.meshes[meshes].name.includes("Wood")) {
                     hinge.meshes[meshes].material.roughness = 0.5;
