@@ -7,6 +7,7 @@ var canvas = document.getElementById('builderCanvas');
 var engine = new BABYLON.Engine(canvas, true, { premultipliedAlpha: false, preserveDrawingBuffer: true, stencil: true });
 var scene = new BABYLON.Scene(engine);
 var hinge;
+var baseNormals = [new BABYLON.Texture("", scene), new BABYLON.Texture("", scene), new BABYLON.Texture("", scene), new BABYLON.Texture("", scene), new BABYLON.Texture("", scene), new BABYLON.Texture("", scene)];
 var animationGroup;
 var skyboxPath = data.Skybox;
 //Initial Parameters
@@ -59,16 +60,30 @@ var createScene = function () {
     BABYLON.SceneLoader.Append(path, model, scene,
         onSuccess = function (meshes) {
             hinge = meshes;
-            var aoImages = new BABYLON.Texture("", scene);
+            var preloadedImages = new BABYLON.Texture("", scene);
             for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
                 hinge.meshes[meshes].actionManager = new BABYLON.ActionManager(scene); // Pointer behavior on model hover                       
                 hinge.meshes[meshes].actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, function (ev) {
                 }, false));
+
+                
+
                 //Preloading AO Images
-                aoImages << new BABYLON.Texture(`./assets/materials/aoOpen/${hinge.meshes[meshes].name}_AO.png`, scene);
-                aoImages << new BABYLON.Texture(`./assets/materials/aoOpen/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
-                aoImages << new BABYLON.Texture(`./assets/materials/aoClosed/${hinge.meshes[meshes].name}_AO.png`, scene);
-                aoImages << new BABYLON.Texture(`./assets/materials/aoClosed/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
+                preloadedImages << new BABYLON.Texture(`./assets/materials/aoOpen/${hinge.meshes[meshes].name}_AO.png`, scene);
+                preloadedImages << new BABYLON.Texture(`./assets/materials/aoOpen/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
+                preloadedImages << new BABYLON.Texture(`./assets/materials/aoClosed/${hinge.meshes[meshes].name}_AO.png`, scene);
+                preloadedImages << new BABYLON.Texture(`./assets/materials/aoClosed/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
+
+                if (!hinge.meshes[meshes].name.includes("Wood") && !(hinge.meshes[meshes].name.includes("Background"))) {
+                    preloadedImages << new BABYLON.Texture(`./assets/materials/normalMaps/${hinge.meshes[meshes].name}_BlackECoat.png`, scene);
+                    //Hinge Normals store for further swap
+                    baseNormals[meshes] = hinge.meshes[meshes].material.bumpTexture;
+                }
+                else {
+                    preloadedImages << new BABYLON.Texture("", scene);
+                    baseNormals[meshes] = new BABYLON.Texture("", scene);
+                }
+                
                 //Roughness and Metalness adjustments
                 if (!hinge.meshes[meshes].name.includes("Wood")) {
                     hinge.meshes[meshes].material.roughness = 0.5;
@@ -220,8 +235,20 @@ function materialChange(material) {
         $(`#${material}`).css("display", "inline-block");
         
         for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
-            if (!hinge.meshes[meshes].name.includes("Wood") && !(hinge.meshes[meshes].name.includes("Background"))) {
+            if (!hinge.meshes[meshes].name.includes("Wood") && !(hinge.meshes[meshes].name.includes("Background"))) {  
+                hinge.meshes[meshes].material.bumpTexture = baseNormals[meshes];
                 hinge.meshes[meshes].material.albedoColor = new BABYLON.Color3.FromHexString(colorCode);
+                if (material != "black") {                   
+                    hinge.meshes[meshes].material.albedoColor.b -= 50 / 255;
+                    hinge.meshes[meshes].material.albedoColor.g -= 50 / 255;
+                    hinge.meshes[meshes].material.albedoColor.r -= 50 / 255;
+                }
+                else {
+                    console.log(`./assets/materials/normalMaps/${hinge.meshes[meshes].name}_BlackECoat.png`)
+                    hinge.meshes[meshes].material.bumpTexture = new BABYLON.Texture(`./assets/materials/normalMaps/${hinge.meshes[meshes].name}_BlackECoat.png`, scene);
+                    hinge.meshes[meshes].material.bumpTexture.vAng = -Math.PI;
+                    hinge.meshes[meshes].material.bumpTexture.wAng = -Math.PI;
+                }
             }
         }
         hingeMaterial = material;
@@ -229,4 +256,3 @@ function materialChange(material) {
 
    
 }
-
