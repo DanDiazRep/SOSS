@@ -67,21 +67,23 @@ var createScene = function () {
                 }, false));
 
                 
-
+                
                 //Preloading AO Images
-                preloadedImages << new BABYLON.Texture(`./assets/materials/aoOpen/${hinge.meshes[meshes].name}_AO.png`, scene);
-                preloadedImages << new BABYLON.Texture(`./assets/materials/aoOpen/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
-                preloadedImages << new BABYLON.Texture(`./assets/materials/aoClosed/${hinge.meshes[meshes].name}_AO.png`, scene);
-                preloadedImages << new BABYLON.Texture(`./assets/materials/aoClosed/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
+                if (!hinge.meshes[meshes].name.includes("hdrSkyBox")) {
+                    preloadedImages << new BABYLON.Texture(`./assets/materials/aoOpen/${hinge.meshes[meshes].name}_AO.png`, scene);
+                    preloadedImages << new BABYLON.Texture(`./assets/materials/aoOpen/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
+                    preloadedImages << new BABYLON.Texture(`./assets/materials/aoClosed/${hinge.meshes[meshes].name}_AO.png`, scene);
+                    preloadedImages << new BABYLON.Texture(`./assets/materials/aoClosed/WB_${hinge.meshes[meshes].name}_AO.png`, scene);
 
-                if (!hinge.meshes[meshes].name.includes("Wood") && !(hinge.meshes[meshes].name.includes("Background"))) {
-                    preloadedImages << new BABYLON.Texture(`./assets/materials/normalMaps/${hinge.meshes[meshes].name}_BlackECoat.png`, scene);
-                    //Hinge Normals store for further swap
-                    baseNormals[meshes] = hinge.meshes[meshes].material.bumpTexture;
-                }
-                else {
-                    preloadedImages << new BABYLON.Texture("", scene);
-                    baseNormals[meshes] = new BABYLON.Texture("", scene);
+                    if (!hinge.meshes[meshes].name.includes("Wood") && !(hinge.meshes[meshes].name.includes("Background"))) {
+                        preloadedImages << new BABYLON.Texture(`./assets/materials/normalMaps/${hinge.meshes[meshes].name}_BlackECoat.png`, scene);
+                        //Hinge Normals store for further swap
+                        baseNormals[meshes] = hinge.meshes[meshes].material.bumpTexture;
+                    }
+                    else {
+                        preloadedImages << new BABYLON.Texture("", scene);
+                        baseNormals[meshes] = new BABYLON.Texture("", scene);
+                    }
                 }
                 
                 //Roughness and Metalness adjustments
@@ -106,7 +108,7 @@ var createScene = function () {
                 setTimeout(() => {
                     // Change AO after 4s if the hinge is open. Otherwise 0s
                     for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
-                        if (!hinge.meshes[meshes].name.includes("Background")) {
+                        if (!hinge.meshes[meshes].name.includes("Background") && !hinge.meshes[meshes].name.includes("hdrSkyBox")) {
                             hinge.meshes[meshes].material.ambientTexture =
                                 new BABYLON.Texture(`./assets/materials/ao${isOpen ? "Open" : "Closed"}/${isWoodBlock ? "WB_" : ""}${hinge.meshes[meshes].name}_AO.png`, scene);
                             hinge.meshes[meshes].material.ambientTexture.vAng = -Math.PI;
@@ -180,7 +182,7 @@ function playAnimation() {
 function woodBlockState() {
     isWoodBlock = !isWoodBlock;
     for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
-        if (!hinge.meshes[meshes].name.includes("Background")) {
+        if (!hinge.meshes[meshes].name.includes("Background") && !hinge.meshes[meshes].name.includes("hdrSkyBox")) {
             //Toggle the wood block visibility
             if (hinge.meshes[meshes].name.includes("Wood"))
                 hinge.meshes[meshes].visibility = !hinge.meshes[meshes].visibility;  
@@ -235,7 +237,8 @@ function materialChange(material) {
         $(`#${material}`).css("display", "inline-block");
         
         for (meshes = 1; hinge.meshes.length > meshes; meshes++) {
-            if (!hinge.meshes[meshes].name.includes("Wood") && !(hinge.meshes[meshes].name.includes("Background"))) {  
+            
+            if (!hinge.meshes[meshes].name.includes("Wood") && !(hinge.meshes[meshes].name.includes("Background")) && !hinge.meshes[meshes].name.includes("hdrSkyBox")) {                 
                 hinge.meshes[meshes].material.bumpTexture = baseNormals[meshes];
                 hinge.meshes[meshes].material.albedoColor = new BABYLON.Color3.FromHexString(colorCode);
                 if (material != "black") {                   
@@ -244,7 +247,6 @@ function materialChange(material) {
                     hinge.meshes[meshes].material.albedoColor.r -= 50 / 255;
                 }
                 else {
-                    console.log(`./assets/materials/normalMaps/${hinge.meshes[meshes].name}_BlackECoat.png`)
                     hinge.meshes[meshes].material.bumpTexture = new BABYLON.Texture(`./assets/materials/normalMaps/${hinge.meshes[meshes].name}_BlackECoat.png`, scene);
                     hinge.meshes[meshes].material.bumpTexture.vAng = -Math.PI;
                     hinge.meshes[meshes].material.bumpTexture.wAng = -Math.PI;
